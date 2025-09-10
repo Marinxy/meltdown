@@ -4,8 +4,8 @@ class Explosion extends Entity {
         super();
         
         // Add components
-        this.addComponent('Transform', new Transform(x, y, 0));
-        this.addComponent('Render', new Render('#ff4400', radius * 2, radius * 2));
+        this.addComponent(new Transform(x, y, 0));
+        this.addComponent(new Render('explosion', '#ff4400'));
         
         // Explosion properties
         this.maxRadius = radius;

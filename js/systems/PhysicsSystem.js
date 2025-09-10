@@ -260,11 +260,14 @@ class PhysicsSystem extends System {
 
         // Create impact effect
         if (window.gameInstance) {
-            window.gameInstance.createExplosion(
-                bullet.transform.x,
-                bullet.transform.y,
-                { size: 'small', color: '#ffff00' }
-            );
+            const bulletTransform = bullet.getComponent('Transform');
+            if (bulletTransform) {
+                window.gameInstance.createExplosion(
+                    bulletTransform.x,
+                    bulletTransform.y,
+                    { size: 'small', color: '#ffff00' }
+                );
+            }
         }
 
         // Destroy bullet

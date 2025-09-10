@@ -362,6 +362,14 @@ class Game {
         }
     }
 
+    createExplosion(x, y, options = {}) {
+        const radius = options.size === 'small' ? 20 : options.radius || 30;
+        const damage = options.damage || 0;
+        const explosion = new Explosion(x, y, radius, damage, null);
+        this.addEntity(explosion);
+        return explosion;
+    }
+
     setSelectedClass(className) {
         this.selectedClass = className;
     }
