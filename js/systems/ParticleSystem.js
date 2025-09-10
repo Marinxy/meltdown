@@ -352,7 +352,7 @@ class ParticleSystem extends System {
         
         // Emit explosion event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('explosion:created', explosion);
+            EventManager.emit('explosion_created', explosion);
         }
         
         return explosion;

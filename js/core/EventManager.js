@@ -187,4 +187,18 @@ class EventManager {
 }
 
 // Global event manager instance
-window.EventManager = EventManager;
+window.EventManager = new EventManager();
+
+// Make EventManager methods available as static methods
+EventManager.on = window.EventManager.on.bind(window.EventManager);
+EventManager.off = window.EventManager.off.bind(window.EventManager);
+EventManager.emit = window.EventManager.emit.bind(window.EventManager);
+EventManager.once = window.EventManager.once.bind(window.EventManager);
+EventManager.emitAsync = window.EventManager.emitAsync.bind(window.EventManager);
+EventManager.queue = window.EventManager.queue.bind(window.EventManager);
+EventManager.processQueue = window.EventManager.processQueue.bind(window.EventManager);
+EventManager.clearQueue = window.EventManager.clearQueue.bind(window.EventManager);
+EventManager.hasListeners = window.EventManager.hasListeners.bind(window.EventManager);
+EventManager.getListenerCount = window.EventManager.getListenerCount.bind(window.EventManager);
+EventManager.getAllEvents = window.EventManager.getAllEvents.bind(window.EventManager);
+EventManager.clear = window.EventManager.clear.bind(window.EventManager);

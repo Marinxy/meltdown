@@ -164,7 +164,7 @@ class Health extends Component {
 
         // Emit death event
         if (this.entity && window.gameInstance) {
-            window.gameInstance.eventManager.emit('entity:death', this.entity, source);
+            EventManager.emit('entity_death', this.entity, source);
         }
     }
 

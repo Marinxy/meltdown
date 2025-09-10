@@ -23,7 +23,7 @@ class Render extends Component {
     render(ctx) {
         if (!this.visible || this.opacity <= 0) return;
 
-        const transform = this.getComponent('Transform');
+        const transform = this.entity.getComponent('Transform');
         if (!transform) return;
 
         ctx.save();

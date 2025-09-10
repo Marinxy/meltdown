@@ -88,10 +88,10 @@ class EnemyManager {
     }
 
     getActivePlayers() {
-        if (!window.gameInstance || !window.gameInstance.physicsSystem) return [];
+        if (!window.gameInstance) return [];
         
-        return window.gameInstance.physicsSystem.entities
-            .filter(entity => entity.hasTag('player') && !entity.getComponent('Health').isDead());
+        return window.gameInstance.entities
+            .filter(entity => entity.hasTag('player') && entity.getComponent('Health') && !entity.getComponent('Health').isDead());
     }
 
     spawnRandomEnemy() {
@@ -154,9 +154,11 @@ class EnemyManager {
         // Find spawn points that are far from all players
         const validSpawnPoints = this.spawnPoints.filter(point => {
             return players.every(player => {
+                const transform = player.getComponent('Transform');
+                if (!transform) return true;
                 const distance = MathUtils.distance(
                     point.x, point.y,
-                    player.transform.x, player.transform.y
+                    transform.x, transform.y
                 );
                 return distance > 200; // Minimum distance from players
             });
@@ -190,16 +192,20 @@ class EnemyManager {
         const physics = enemy.getComponent('Physics');
         
         if (health) {
-            health.maxHealth *= this.difficultyScale;
-            health.currentHealth = health.maxHealth;
+            health.max *= this.difficultyScale;
+            health.current = health.max;
         }
         
         if (physics) {
             physics.maxSpeed *= (1 + (this.difficultyScale - 1) * 0.5);
         }
         
-        enemy.damage *= this.difficultyScale;
-        enemy.scoreValue = Math.floor(enemy.scoreValue * this.difficultyScale);
+        if (enemy.damage) {
+            enemy.damage *= this.difficultyScale;
+        }
+        if (enemy.scoreValue) {
+            enemy.scoreValue = Math.floor(enemy.scoreValue * this.difficultyScale);
+        }
     }
 
     updateDifficulty() {
@@ -228,7 +234,7 @@ class EnemyManager {
         
         // Emit wave start event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('wave:started', waveNumber, enemyCount);
+            EventManager.emit('wave_started', { wave: waveNumber, enemyCount: enemyCount });
         }
     }
 
@@ -246,7 +252,7 @@ class EnemyManager {
             
             // Emit boss spawn event
             if (window.gameInstance) {
-                window.gameInstance.eventManager.emit('boss:spawned', boss);
+                EventManager.emit('boss_spawned', { boss: boss });
             }
         }
         
@@ -255,16 +261,18 @@ class EnemyManager {
 
     findBossSpawnPoint() {
         // Try to spawn boss at center of map
-        const centerX = window.gameInstance ? window.gameInstance.gameWidth / 2 : 400;
-        const centerY = window.gameInstance ? window.gameInstance.gameHeight / 2 : 300;
+        const centerX = window.gameInstance ? window.gameInstance.canvas.width / 2 : 400;
+        const centerY = window.gameInstance ? window.gameInstance.canvas.height / 2 : 300;
         
         const players = this.getActivePlayers();
         
         // If center is too close to players, find alternative
         const tooClose = players.some(player => {
+            const transform = player.getComponent('Transform');
+            if (!transform) return false;
             const distance = MathUtils.distance(
                 centerX, centerY,
-                player.transform.x, player.transform.y
+                transform.x, transform.y
             );
             return distance < 150;
         });
@@ -307,6 +315,11 @@ class EnemyManager {
             this.activeEnemies.splice(index, 1);
         }
         
+        // Emit enemy killed event
+        if (window.gameInstance) {
+            EventManager.emit('enemy_killed', { enemy: enemy, killer: killer, points: enemy.scoreValue || 10 });
+        }
+        
         // Check if wave is complete
         if (this.activeEnemies.length === 0) {
             this.onWaveComplete();
@@ -316,7 +329,7 @@ class EnemyManager {
     onWaveComplete() {
         // Emit wave complete event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('wave:completed', this.currentWave);
+            EventManager.emit('wave_completed', { wave: this.currentWave, bonus: 100 });
         }
         
         // Start next wave after delay
@@ -328,7 +341,9 @@ class EnemyManager {
     // Utility methods
     getEnemiesInRadius(x, y, radius) {
         return this.activeEnemies.filter(enemy => {
-            const distance = MathUtils.distance(x, y, enemy.transform.x, enemy.transform.y);
+            const transform = enemy.getComponent('Transform');
+            if (!transform) return false;
+            const distance = MathUtils.distance(x, y, transform.x, transform.y);
             return distance <= radius;
         });
     }
@@ -340,7 +355,9 @@ class EnemyManager {
         let nearestDistance = Infinity;
         
         for (const enemy of this.activeEnemies) {
-            const distance = MathUtils.distance(x, y, enemy.transform.x, enemy.transform.y);
+            const transform = enemy.getComponent('Transform');
+            if (!transform) continue;
+            const distance = MathUtils.distance(x, y, transform.x, transform.y);
             if (distance < nearestDistance) {
                 nearestDistance = distance;
                 nearest = enemy;

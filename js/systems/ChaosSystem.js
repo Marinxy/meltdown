@@ -123,7 +123,7 @@ class ChaosSystem extends System {
         
         // Emit chaos change event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('chaos:changed', {
+            EventManager.emit('chaos_changed', {
                 level: this.chaosLevel,
                 state: this.currentState,
                 amount: adjustedAmount,
@@ -202,7 +202,7 @@ class ChaosSystem extends System {
             
             // Emit state change event
             if (window.gameInstance) {
-                window.gameInstance.eventManager.emit('chaos:stateChanged', {
+                EventManager.emit('chaos_stateChanged', {
                     oldState: oldState,
                     newState: newState,
                     chaosLevel: this.chaosLevel
@@ -246,31 +246,39 @@ class ChaosSystem extends System {
         
         const audioSystem = window.gameInstance.audioSystem;
         
-        // Update music layers based on intensity
-        audioSystem.setMusicIntensity(this.musicIntensityLevel);
+        // Update music layers based on intensity (if method exists)
+        if (audioSystem.setMusicIntensity) {
+            audioSystem.setMusicIntensity(this.musicIntensityLevel);
+        }
         
-        // Apply audio effects
-        audioSystem.setDistortion(this.audioDistortionLevel);
-        audioSystem.setBassBoost(this.bassBoostLevel);
-        audioSystem.setReverb(this.reverbLevel);
+        // Apply audio effects (if methods exist)
+        if (audioSystem.setDistortion) {
+            audioSystem.setDistortion(this.audioDistortionLevel);
+        }
+        if (audioSystem.setBassBoost) {
+            audioSystem.setBassBoost(this.bassBoostLevel);
+        }
+        if (audioSystem.setReverb) {
+            audioSystem.setReverb(this.reverbLevel);
+        }
         
-        // Chaos-specific audio modulations
+        // Chaos-specific audio modulations (if methods exist)
         switch (this.currentState) {
             case 'meltdown':
-                audioSystem.setLowPassFilter(0.3); // Muffle audio
-                audioSystem.setPitchShift(0.95); // Slightly lower pitch
+                if (audioSystem.setLowPassFilter) audioSystem.setLowPassFilter(0.3); // Muffle audio
+                if (audioSystem.setPitchShift) audioSystem.setPitchShift(0.95); // Slightly lower pitch
                 break;
             case 'chaotic':
-                audioSystem.setLowPassFilter(0.7);
-                audioSystem.setPitchShift(0.98);
+                if (audioSystem.setLowPassFilter) audioSystem.setLowPassFilter(0.7);
+                if (audioSystem.setPitchShift) audioSystem.setPitchShift(0.98);
                 break;
             case 'intense':
-                audioSystem.setLowPassFilter(0.9);
-                audioSystem.setPitchShift(1.0);
+                if (audioSystem.setLowPassFilter) audioSystem.setLowPassFilter(0.9);
+                if (audioSystem.setPitchShift) audioSystem.setPitchShift(1.0);
                 break;
             default:
-                audioSystem.setLowPassFilter(1.0);
-                audioSystem.setPitchShift(1.0);
+                if (audioSystem.setLowPassFilter) audioSystem.setLowPassFilter(1.0);
+                if (audioSystem.setPitchShift) audioSystem.setPitchShift(1.0);
                 break;
         }
     }
@@ -418,7 +426,7 @@ class ChaosSystem extends System {
         };
         
         const soundName = soundMap[newState];
-        if (soundName) {
+        if (soundName && window.gameInstance.audioSystem && window.gameInstance.audioSystem.playSound) {
             window.gameInstance.audioSystem.playSound(soundName, {
                 spatial: false,
                 volume: 0.7

@@ -12,8 +12,10 @@ class UI {
     setupEventListeners() {
         // Main Menu buttons
         document.getElementById('startGame').addEventListener('click', () => {
+            console.log('Start Game clicked!');
             this.game.startGame();
             this.showScreen('gameScreen');
+            console.log('Switched to game screen');
         });
 
         document.getElementById('classSelect').addEventListener('click', () => {
@@ -75,18 +77,30 @@ class UI {
     }
 
     showScreen(screenName) {
+        console.log(`Switching to screen: ${screenName}`);
+        
         // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
 
         // Show target screen
-        document.getElementById(screenName).classList.add('active');
-        this.currentScreen = screenName;
+        const targetScreen = document.getElementById(screenName);
+        if (targetScreen) {
+            targetScreen.classList.add('active');
+            this.currentScreen = screenName;
+            console.log(`Successfully switched to ${screenName}`);
+        } else {
+            console.error(`Screen ${screenName} not found!`);
+        }
 
         // Handle screen-specific logic
         if (screenName === 'mainMenu') {
-            this.game.audioEngine.playMusic('menu_music');
+            try {
+                this.game.audioEngine.playMusic('menu_music');
+            } catch (e) {
+                console.log('Menu music not available - running silently');
+            }
         }
     }
 

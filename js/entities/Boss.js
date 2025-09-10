@@ -628,7 +628,7 @@ class Boss extends Enemy {
         
         // Trigger victory condition
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('boss:defeated', this, source);
+            EventManager.emit('boss_defeated', this, source);
         }
         
         super.onEnemyDeath(source);

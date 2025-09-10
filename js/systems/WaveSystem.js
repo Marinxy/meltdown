@@ -101,7 +101,7 @@ class WaveSystem extends System {
         
         // Emit wave preparation event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('wave:preparing', {
+            EventManager.emit('wave_preparing', {
                 waveNumber: this.currentWave,
                 timeUntilStart: this.nextWaveTimer,
                 enemyCount: this.enemiesToSpawnThisWave,
@@ -148,7 +148,7 @@ class WaveSystem extends System {
         
         // Emit wave start event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('wave:started', {
+            EventManager.emit('wave_started', {
                 waveNumber: this.currentWave,
                 enemyCount: this.enemiesToSpawnThisWave,
                 isBossWave: this.isBossWave(),
@@ -209,7 +209,7 @@ class WaveSystem extends System {
                     
                     // Emit spawn event
                     if (window.gameInstance) {
-                        window.gameInstance.eventManager.emit('enemy:spawned', {
+                        EventManager.emit('enemy_spawned', {
                             enemy: enemy,
                             waveNumber: this.currentWave,
                             spawnIndex: this.enemiesSpawnedThisWave
@@ -304,7 +304,7 @@ class WaveSystem extends System {
         
         // Emit wave completion event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('wave:completed', waveStats);
+            EventManager.emit('wave_completed', waveStats);
         }
         
         // Award wave completion bonus
@@ -376,7 +376,7 @@ class WaveSystem extends System {
             
             // Emit score bonus event
             if (window.gameInstance) {
-                window.gameInstance.eventManager.emit('player:scoreBonus', {
+                EventManager.emit('player_scoreBonus', {
                     player: player,
                     bonus: bonusScore,
                     reason: 'wave_completion'
@@ -389,7 +389,7 @@ class WaveSystem extends System {
         const secondsLeft = Math.ceil(this.waveStartCountdown / 1000);
         
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('wave:countdown', {
+            EventManager.emit('wave_countdown', {
                 secondsLeft: secondsLeft,
                 waveNumber: this.currentWave
             });
@@ -398,7 +398,7 @@ class WaveSystem extends System {
 
     updateWaveUI() {
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('ui:updateWave', {
+            EventManager.emit('ui_updateWave', {
                 currentWave: this.currentWave,
                 enemiesRemaining: this.enemiesToSpawnThisWave - this.enemiesSpawnedThisWave,
                 enemiesAlive: this.getCurrentEnemyCount(),
@@ -449,7 +449,7 @@ class WaveSystem extends System {
             killer.score += bossBonus;
             
             if (window.gameInstance) {
-                window.gameInstance.eventManager.emit('player:scoreBonus', {
+                EventManager.emit('player_scoreBonus', {
                     player: killer,
                     bonus: bossBonus,
                     reason: 'boss_defeat'

@@ -32,7 +32,7 @@ class Game {
         this.lastTime = 0;
         this.running = false;
         
-        this.initialize();
+        // Don't call initialize in constructor - it will be called by main.js
     }
 
     async initialize() {
@@ -52,6 +52,9 @@ class Game {
         // Setup event listeners
         this.setupEventListeners();
         
+        // Set global game instance for other systems to access
+        window.gameInstance = this;
+        
         console.log('Game initialized');
     }
 
@@ -64,9 +67,12 @@ class Game {
         
         // Create game systems
         this.enemyManager = new EnemyManager();
-        this.waveSystem = new WaveSystem(this.enemyManager);
+        this.waveSystem = new WaveSystem();
         this.chaosSystem = new ChaosSystem();
         this.particleSystem = new ParticleSystem();
+        
+        // Initialize enemy manager with canvas dimensions
+        this.enemyManager.initialize(this.canvas.width, this.canvas.height);
         
         this.systems.push(this.enemyManager);
         this.systems.push(this.waveSystem);
@@ -104,11 +110,11 @@ class Game {
         });
 
         this.canvas.addEventListener('mousedown', (e) => {
-            this.mouse.down = true;
+            this.mouse.pressed = true;
         });
 
         this.canvas.addEventListener('mouseup', (e) => {
-            this.mouse.down = false;
+            this.mouse.pressed = false;
         });
     }
 
@@ -147,15 +153,19 @@ class Game {
         this.createPlayer();
         
         // Start systems
-        this.waveSystem.startWave(1);
-        this.chaosSystem.reset();
+        this.waveSystem.startGame();
+        this.chaosSystem.resetChaos();
         
         // Start game loop
         this.running = true;
         this.gameLoop();
         
-        // Play game music
-        this.audioEngine.playMusic('game_music');
+        // Play game music (if available)
+        try {
+            this.audioEngine.playMusic('game_music');
+        } catch (e) {
+            console.log('Game music not available - running silently');
+        }
         
         console.log('Game started');
     }
@@ -166,7 +176,8 @@ class Game {
         this.entities.push(this.player);
         
         // Setup player input
-        this.player.setupInput(this.keys, this.mouse);
+        this.player.setKeys(this.keys);
+        this.player.setMouse(this.mouse);
     }
 
     pauseGame() {

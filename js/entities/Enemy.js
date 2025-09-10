@@ -2,6 +2,8 @@
 class Enemy extends Entity {
     constructor(x, y, enemyType = 'grunt') {
         super();
+        this.x = x;
+        this.y = y;
         this.enemyType = enemyType;
         this.target = null;
         this.lastTargetUpdate = 0;
@@ -33,7 +35,7 @@ class Enemy extends Entity {
         const enemyStats = this.getEnemyStats();
         
         // Add Transform component
-        const transform = new Transform(0, 0, 0);
+        const transform = new Transform(this.x, this.y, 0);
         this.addComponent(transform);
         
         // Add Physics component
@@ -412,7 +414,7 @@ class Enemy extends Entity {
             
             // Emit kill event
             if (window.gameInstance) {
-                window.gameInstance.eventManager.emit('enemy:killed', this, source);
+                EventManager.emit('enemy_killed', this, source);
             }
         }
         

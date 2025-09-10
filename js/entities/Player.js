@@ -2,6 +2,8 @@
 class Player extends Entity {
     constructor(x, y, playerClass = 'heavy', playerId = null) {
         super();
+        this.x = x;
+        this.y = y;
         this.playerId = playerId || this.generatePlayerId();
         this.playerClass = playerClass;
         this.weapon = null;
@@ -33,7 +35,7 @@ class Player extends Entity {
         const classStats = this.getClassStats();
         
         // Add Transform component
-        this.addComponent(new Transform(0, 0, 0));
+        this.addComponent(new Transform(this.x, this.y, 0));
         
         // Add Physics component
         const physics = new Physics();
@@ -237,7 +239,7 @@ class Player extends Entity {
         
         // Emit special ability event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('player:specialAbility', this, this.playerClass);
+            EventManager.emit('player_specialAbility', this, this.playerClass);
         }
     }
 
@@ -397,7 +399,7 @@ class Player extends Entity {
             }
             
             // Emit death event
-            window.gameInstance.eventManager.emit('player:death', this, source);
+            EventManager.emit('player_death', this, source);
         }
         
         // Respawn after delay (handled by game manager)
@@ -444,7 +446,7 @@ class Player extends Entity {
         
         // Emit score event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('player:score', this, points);
+            EventManager.emit('player_score', this, points);
         }
     }
 
@@ -454,7 +456,7 @@ class Player extends Entity {
         
         // Emit kill event
         if (window.gameInstance) {
-            window.gameInstance.eventManager.emit('player:kill', this, victim);
+            EventManager.emit('player_kill', this, victim);
         }
     }
 

@@ -1,11 +1,11 @@
 // Render System - Handles all visual rendering and effects
 class RenderSystem extends System {
-    constructor(canvas) {
+    constructor(ctx) {
         super();
         this.requiredComponents = ['Transform', 'Render'];
         this.priority = 10; // Render last
-        this.canvas = canvas;
-        this.ctx = canvas.getContext('2d');
+        this.ctx = ctx;
+        this.canvas = ctx.canvas;
         this.camera = { x: 0, y: 0, zoom: 1 };
         this.layers = new Map();
         this.screenShake = { x: 0, y: 0, intensity: 0, duration: 0 };
@@ -57,7 +57,9 @@ class RenderSystem extends System {
         });
     }
 
-    update(deltaTime) {
+    update(deltaTime, entities) {
+        this.entities = entities;
+        
         // Update screen shake
         if (this.screenShake.duration > 0) {
             this.screenShake.duration -= deltaTime;
@@ -78,11 +80,12 @@ class RenderSystem extends System {
 
     updateCamera() {
         // Find player entity to follow
-        const player = Array.from(this.entities).find(entity => entity.hasTag('player'));
-        if (player && player.transform) {
+        const player = this.entities.find(entity => entity.hasTag('player'));
+        if (player && player.getComponent('Transform')) {
+            const transform = player.getComponent('Transform');
             // Smooth camera following
-            const targetX = player.transform.x - this.canvas.width / 2;
-            const targetY = player.transform.y - this.canvas.height / 2;
+            const targetX = transform.x - this.canvas.width / 2;
+            const targetY = transform.y - this.canvas.height / 2;
             
             this.camera.x = MathUtils.lerp(this.camera.x, targetX, 0.1);
             this.camera.y = MathUtils.lerp(this.camera.y, targetY, 0.1);
@@ -95,7 +98,7 @@ class RenderSystem extends System {
         for (const entity of this.entities) {
             const render = entity.getComponent('Render');
             if (render && render.visible) {
-                const layer = render.layer;
+                const layer = render.layer || 0;
                 if (!this.layers.has(layer)) {
                     this.layers.set(layer, []);
                 }
@@ -104,46 +107,48 @@ class RenderSystem extends System {
         }
     }
 
-    render() {
+    render(ctx, entities) {
         if (!this.active) return;
+        
+        this.entities = entities;
 
         // Clear canvas
-        this.ctx.fillStyle = this.backgroundColor;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.fillStyle = this.backgroundColor;
+        ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Apply camera transform and screen shake
-        this.ctx.save();
-        this.ctx.translate(
+        ctx.save();
+        ctx.translate(
             -this.camera.x + this.screenShake.x,
             -this.camera.y + this.screenShake.y
         );
-        this.ctx.scale(this.camera.zoom, this.camera.zoom);
+        ctx.scale(this.camera.zoom, this.camera.zoom);
 
         // Render background grid
         if (this.gridEnabled) {
-            this.renderGrid();
+            this.renderGrid(ctx);
         }
 
         // Render entities by layer
         const sortedLayers = Array.from(this.layers.keys()).sort((a, b) => a - b);
         for (const layer of sortedLayers) {
-            this.renderLayer(layer);
+            this.renderLayer(ctx, layer);
         }
 
-        this.ctx.restore();
+        ctx.restore();
 
         // Apply post-processing effects
-        this.applyPostProcessors();
+        this.applyPostProcessors(ctx);
 
         // Render UI elements (not affected by camera)
-        this.renderUI();
+        this.renderUI(ctx);
     }
 
-    renderGrid() {
-        this.ctx.save();
-        this.ctx.strokeStyle = this.gridColor;
-        this.ctx.globalAlpha = this.gridOpacity;
-        this.ctx.lineWidth = 1;
+    renderGrid(ctx) {
+        ctx.save();
+        ctx.strokeStyle = this.gridColor;
+        ctx.globalAlpha = this.gridOpacity;
+        ctx.lineWidth = 1;
 
         const startX = Math.floor(this.camera.x / this.gridSize) * this.gridSize;
         const startY = Math.floor(this.camera.y / this.gridSize) * this.gridSize;
@@ -152,38 +157,38 @@ class RenderSystem extends System {
 
         // Vertical lines
         for (let x = startX; x <= endX; x += this.gridSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(x, startY);
-            this.ctx.lineTo(x, endY);
-            this.ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, startY);
+            ctx.lineTo(x, endY);
+            ctx.stroke();
         }
 
         // Horizontal lines
         for (let y = startY; y <= endY; y += this.gridSize) {
-            this.ctx.beginPath();
-            this.ctx.moveTo(startX, y);
-            this.ctx.lineTo(endX, y);
-            this.ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(startX, y);
+            ctx.lineTo(endX, y);
+            ctx.stroke();
         }
 
-        this.ctx.restore();
+        ctx.restore();
     }
 
-    renderLayer(layer) {
+    renderLayer(ctx, layer) {
         const entities = this.layers.get(layer);
         if (!entities) return;
 
         for (const entity of entities) {
             if (entity.active && this.isEntityVisible(entity)) {
-                this.renderEntity(entity);
+                this.renderEntity(ctx, entity);
             }
         }
     }
 
-    renderEntity(entity) {
+    renderEntity(ctx, entity) {
         const render = entity.getComponent('Render');
         if (render && render.visible) {
-            render.render(this.ctx);
+            render.render(ctx);
         }
     }
 
@@ -201,15 +206,15 @@ class RenderSystem extends System {
         );
     }
 
-    renderUI() {
+    renderUI(ctx) {
         // UI elements are rendered without camera transform
         // This will be handled by the main game UI system
     }
 
-    applyPostProcessors() {
+    applyPostProcessors(ctx) {
         for (const processor of this.postProcessors) {
             if (processor.active) {
-                processor.process(this.ctx);
+                processor.process(ctx);
             }
         }
     }
@@ -221,15 +226,8 @@ class RenderSystem extends System {
     }
 
     flash(color = '#ffffff', duration = 100, opacity = 0.5) {
-        this.ctx.save();
-        this.ctx.globalAlpha = opacity;
-        this.ctx.fillStyle = color;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.restore();
-
-        setTimeout(() => {
-            // Flash effect is temporary, no cleanup needed
-        }, duration);
+        // Flash effect will be handled by the main game loop
+        // This is a placeholder for the flash effect
     }
 
     // Camera controls
@@ -300,14 +298,14 @@ class RenderSystem extends System {
     }
 
     // Chaos visual effects
-    applyChaosEffects(chaosLevel) {
+    applyChaosEffects(ctx, chaosLevel) {
         // Color inversion at high chaos
         if (chaosLevel > 0.8) {
-            this.ctx.save();
-            this.ctx.globalCompositeOperation = 'difference';
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.restore();
+            ctx.save();
+            ctx.globalCompositeOperation = 'difference';
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            ctx.restore();
         }
 
         // Screen distortion
@@ -318,18 +316,18 @@ class RenderSystem extends System {
     }
 
     // Debug rendering
-    renderDebugInfo() {
-        this.ctx.save();
-        this.ctx.fillStyle = '#00ff00';
-        this.ctx.font = '12px monospace';
+    renderDebugInfo(ctx) {
+        ctx.save();
+        ctx.fillStyle = '#00ff00';
+        ctx.font = '12px monospace';
         
         let y = 20;
-        this.ctx.fillText(`Entities: ${this.entities.size}`, 10, y);
+        ctx.fillText(`Entities: ${this.entities ? this.entities.length : 0}`, 10, y);
         y += 15;
-        this.ctx.fillText(`Camera: (${Math.round(this.camera.x)}, ${Math.round(this.camera.y)})`, 10, y);
+        ctx.fillText(`Camera: (${Math.round(this.camera.x)}, ${Math.round(this.camera.y)})`, 10, y);
         y += 15;
-        this.ctx.fillText(`Zoom: ${this.camera.zoom.toFixed(2)}`, 10, y);
+        ctx.fillText(`Zoom: ${this.camera.zoom.toFixed(2)}`, 10, y);
         
-        this.ctx.restore();
+        ctx.restore();
     }
 }
