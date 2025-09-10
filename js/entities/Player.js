@@ -384,11 +384,14 @@ class Player extends Entity {
         
         // Create death explosion
         if (window.gameInstance) {
-            window.gameInstance.createExplosion(
-                this.transform.x,
-                this.transform.y,
-                { size: 'large', color: '#ff0000' }
-            );
+            const transform = this.getComponent('Transform');
+            if (transform) {
+                window.gameInstance.createExplosion(
+                    transform.x,
+                    transform.y,
+                    { size: 'large', color: '#ff0000' }
+                );
+            }
             
             // Play death sound
             if (window.gameInstance.audioSystem) {
