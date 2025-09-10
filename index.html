@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Arcade Meltdown</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Main Menu -->
+        <div id="mainMenu" class="screen active">
+            <div class="menu-content">
+                <h1 class="game-title">
+                    <span class="neon-text">ARCADE</span>
+                    <span class="neon-text-alt">MELTDOWN</span>
+                </h1>
+                <div class="subtitle">Modern Retro LAN Arcade Shooter</div>
+                
+                <div class="menu-buttons">
+                    <button id="startGame" class="menu-btn primary">START GAME</button>
+                    <button id="classSelect" class="menu-btn">SELECT CLASS</button>
+                    <button id="options" class="menu-btn">OPTIONS</button>
+                    <button id="credits" class="menu-btn">CREDITS</button>
+                </div>
+                
+                <div class="game-info">
+                    <div class="info-item">Players: 1-8 (LAN)</div>
+                    <div class="info-item">Match Length: 10-15 minutes</div>
+                    <div class="info-item">Genre: Chaos + Explosions</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class Selection -->
+        <div id="classSelection" class="screen">
+            <div class="class-content">
+                <h2 class="screen-title">SELECT YOUR CLASS</h2>
+                <div class="class-grid">
+                    <div class="class-card" data-class="heavy">
+                        <div class="class-icon">🔥</div>
+                        <h3>HEAVY</h3>
+                        <div class="class-weapon">Flamethrower</div>
+                        <div class="class-stats">
+                            <div>HP: 150</div>
+                            <div>Speed: Slow</div>
+                            <div>Special: Berserk</div>
+                        </div>
+                        <div class="class-desc">Tank with area damage</div>
+                    </div>
+                    
+                    <div class="class-card" data-class="scout">
+                        <div class="class-icon">⚡</div>
+                        <h3>SCOUT</h3>
+                        <div class="class-weapon">SMG + Dash</div>
+                        <div class="class-stats">
+                            <div>HP: 80</div>
+                            <div>Speed: Fast</div>
+                            <div>Special: Cloak</div>
+                        </div>
+                        <div class="class-desc">High mobility assassin</div>
+                    </div>
+                    
+                    <div class="class-card" data-class="engineer">
+                        <div class="class-icon">🔧</div>
+                        <h3>ENGINEER</h3>
+                        <div class="class-weapon">Shotgun + Turret</div>
+                        <div class="class-stats">
+                            <div>HP: 120</div>
+                            <div>Speed: Medium</div>
+                            <div>Special: Shield</div>
+                        </div>
+                        <div class="class-desc">Versatile support</div>
+                    </div>
+                    
+                    <div class="class-card" data-class="medic">
+                        <div class="class-icon">💚</div>
+                        <h3>MEDIC</h3>
+                        <div class="class-weapon">Heal Beam</div>
+                        <div class="class-stats">
+                            <div>HP: 80</div>
+                            <div>Speed: Medium</div>
+                            <div>Special: Team Buff</div>
+                        </div>
+                        <div class="class-desc">Team sustain specialist</div>
+                    </div>
+                </div>
+                <button id="backToMenu" class="menu-btn">BACK</button>
+            </div>
+        </div>
+
+        <!-- Game Canvas -->
+        <div id="gameScreen" class="screen">
+            <canvas id="gameCanvas" width="1200" height="800"></canvas>
+            
+            <!-- HUD Overlay -->
+            <div id="gameHUD">
+                <div class="hud-top">
+                    <div class="hud-left">
+                        <div class="health-bar">
+                            <div class="health-fill" id="healthFill"></div>
+                            <span class="health-text" id="healthText">150/150</span>
+                        </div>
+                        <div class="class-info" id="classInfo">HEAVY</div>
+                    </div>
+                    
+                    <div class="hud-center">
+                        <div class="wave-info">
+                            <span class="wave-label">WAVE</span>
+                            <span class="wave-number" id="waveNumber">1</span>
+                        </div>
+                        <div class="chaos-meter">
+                            <div class="chaos-fill" id="chaosFill"></div>
+                            <span class="chaos-label">CHAOS</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hud-right">
+                        <div class="score" id="score">0</div>
+                        <div class="enemies-left" id="enemiesLeft">10</div>
+                    </div>
+                </div>
+                
+                <div class="hud-bottom">
+                    <div class="special-ability" id="specialAbility">
+                        <div class="ability-icon">🔥</div>
+                        <div class="ability-cooldown" id="abilityCooldown"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pause Menu -->
+            <div id="pauseMenu" class="overlay-menu">
+                <div class="menu-content">
+                    <h2>GAME PAUSED</h2>
+                    <button id="resumeGame" class="menu-btn">RESUME</button>
+                    <button id="restartGame" class="menu-btn">RESTART</button>
+                    <button id="quitGame" class="menu-btn">QUIT TO MENU</button>
+                </div>
+            </div>
+            
+            <!-- Game Over Screen -->
+            <div id="gameOverScreen" class="overlay-menu">
+                <div class="menu-content">
+                    <h2 class="game-over-title">MELTDOWN COMPLETE</h2>
+                    <div class="final-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Final Score:</span>
+                            <span class="stat-value" id="finalScore">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Waves Survived:</span>
+                            <span class="stat-value" id="finalWave">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Enemies Defeated:</span>
+                            <span class="stat-value" id="finalEnemies">0</span>
+                        </div>
+                    </div>
+                    <div class="achievements">
+                        <div class="achievement" id="achievement1">🔥 Most Explosive Death</div>
+                        <div class="achievement" id="achievement2">👑 Chaos King</div>
+                    </div>
+                    <button id="playAgain" class="menu-btn primary">PLAY AGAIN</button>
+                    <button id="backToMenuFromGame" class="menu-btn">MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio Elements -->
+    <audio id="backgroundMusic" loop>
+        <source src="assets/audio/music/menu_theme.ogg" type="audio/ogg">
+        <source src="assets/audio/music/menu_theme.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Scripts -->
+    <script src="js/core/MathUtils.js"></script>
+    <script src="js/core/EventManager.js"></script>
+    <script src="js/core/AssetManager.js"></script>
+    <script src="js/core/AudioEngine.js"></script>
+    <script src="js/core/Entity.js"></script>
+    <script src="js/core/Component.js"></script>
+    <script src="js/core/System.js"></script>
+    <script src="js/components/Transform.js"></script>
+    <script src="js/components/Physics.js"></script>
+    <script src="js/components/Health.js"></script>
+    <script src="js/components/Render.js"></script>
+    <script src="js/systems/PhysicsSystem.js"></script>
+    <script src="js/systems/RenderSystem.js"></script>
+    <script src="js/systems/AudioSystem.js"></script>
+    <script src="js/entities/Player.js"></script>
+    <script src="js/entities/Enemy.js"></script>
+    <script src="js/entities/Bullet.js"></script>
+    <script src="js/entities/Explosion.js"></script>
+    <script src="js/weapons/Weapon.js"></script>
+    <script src="js/weapons/Flamethrower.js"></script>
+    <script src="js/weapons/SMG.js"></script>
+    <script src="js/weapons/Shotgun.js"></script>
+    <script src="js/weapons/HealBeam.js"></script>
+    <script src="js/Game.js"></script>
+    <script src="js/UI.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
