@@ -203,8 +203,11 @@ class Enemy extends Entity {
         
         // Find nearest player
         if (window.gameInstance && window.gameInstance.physicsSystem) {
+            const transform = this.getComponent('Transform');
+            if (!transform) return;
+            
             const nearbyPlayers = window.gameInstance.physicsSystem
-                .getEntitiesInRadius(this.transform.x, this.transform.y, this.aggroRange)
+                .getEntitiesInRadius(transform.x, transform.y, this.aggroRange)
                 .filter(entity => entity.hasTag('player') && entity.getComponent('Health') && !entity.getComponent('Health').isDead());
             
             if (nearbyPlayers.length > 0) {
@@ -213,10 +216,13 @@ class Enemy extends Entity {
                 let closestDistance = Infinity;
                 
                 for (const player of nearbyPlayers) {
-                    const distance = this.transform.distanceTo(player.transform);
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                        closestPlayer = player;
+                    const playerTransform = player.getComponent('Transform');
+                    if (playerTransform) {
+                        const distance = transform.distanceTo(playerTransform);
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestPlayer = player;
+                        }
                     }
                 }
                 
@@ -241,7 +247,11 @@ class Enemy extends Entity {
             return;
         }
         
-        const distanceToTarget = this.transform.distanceTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!transform || !targetTransform) return;
+        
+        const distanceToTarget = transform.distanceTo(targetTransform);
         
         if (distanceToTarget <= this.attackRange) {
             this.behaviorState = 'attacking';
@@ -269,10 +279,12 @@ class Enemy extends Entity {
         if (!this.target) return;
         
         const physics = this.getComponent('Physics');
-        if (!physics) return;
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!physics || !transform || !targetTransform) return;
         
         // Move toward target
-        const direction = this.transform.directionTo(this.target.transform);
+        const direction = transform.directionTo(targetTransform);
         const seekForce = 300;
         
         physics.applyForce(
@@ -281,14 +293,18 @@ class Enemy extends Entity {
         );
         
         // Face target
-        this.transform.rotation = this.transform.angleTo(this.target.transform);
+        transform.rotation = transform.angleTo(targetTransform);
     }
 
     attackingBehavior() {
         if (!this.target || this.attackCooldown > 0) return;
         
         // Face target
-        this.transform.rotation = this.transform.angleTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (transform && targetTransform) {
+            transform.rotation = transform.angleTo(targetTransform);
+        }
         
         // Attack based on enemy type
         this.performAttack();
@@ -302,10 +318,12 @@ class Enemy extends Entity {
         if (!this.target) return;
         
         const physics = this.getComponent('Physics');
-        if (!physics) return;
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!physics || !transform || !targetTransform) return;
         
         // Move away from target
-        const direction = this.target.transform.directionTo(this.transform);
+        const direction = targetTransform.directionTo(transform);
         const fleeForce = 400;
         
         physics.applyForce(

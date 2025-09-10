@@ -16,10 +16,14 @@ class Bruiser extends Enemy {
     attackingBehavior() {
         if (!this.target || this.attackCooldown > 0) return;
         
-        const distanceToTarget = this.transform.distanceTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!transform || !targetTransform) return;
+        
+        const distanceToTarget = transform.distanceTo(targetTransform);
         
         // Face target
-        this.transform.rotation = this.transform.angleTo(this.target.transform);
+        transform.rotation = transform.angleTo(targetTransform);
         
         // Use slam attack if close enough
         if (distanceToTarget <= this.slamRange && this.slamCooldown <= 0) {
@@ -36,7 +40,10 @@ class Bruiser extends Enemy {
     startSlamAttack() {
         this.slamCooldown = 5000; // 5 second cooldown
         this.slamWindupTimer = this.slamWindupTime;
-        this.originalY = this.transform.y;
+        const transform = this.getComponent('Transform');
+        if (transform) {
+            this.originalY = transform.y;
+        }
         
         // Visual wind-up effect
         const render = this.getComponent('Render');
@@ -55,7 +62,9 @@ class Bruiser extends Enemy {
         }
         
         // Jump up during windup
-        this.transform.y -= this.jumpHeight;
+        if (transform) {
+            transform.y -= this.jumpHeight;
+        }
         
         // Execute slam after windup
         setTimeout(() => {
@@ -64,8 +73,11 @@ class Bruiser extends Enemy {
     }
 
     executeSlamAttack() {
+        const transform = this.getComponent('Transform');
+        if (!transform) return;
+        
         // Return to ground
-        this.transform.y = this.originalY;
+        transform.y = this.originalY;
         this.isSlammingDown = true;
         
         // Create slam area effect
@@ -74,20 +86,21 @@ class Bruiser extends Enemy {
         // Damage all players in range
         if (window.gameInstance && window.gameInstance.physicsSystem) {
             const nearbyPlayers = window.gameInstance.physicsSystem
-                .getEntitiesInRadius(this.transform.x, this.transform.y, this.slamRange)
+                .getEntitiesInRadius(transform.x, transform.y, this.slamRange)
                 .filter(entity => entity.hasTag('player'));
             
             for (const player of nearbyPlayers) {
                 const health = player.getComponent('Health');
                 const physics = player.getComponent('Physics');
+                const playerTransform = player.getComponent('Transform');
                 
                 if (health && !health.isDead()) {
                     // Deal damage
                     health.takeDamage(this.slamDamage, this);
                     
                     // Knockback effect
-                    if (physics) {
-                        const direction = this.transform.directionTo(player.transform);
+                    if (physics && playerTransform) {
+                        const direction = transform.directionTo(playerTransform);
                         physics.applyImpulse(
                             direction.x * this.slamForce,
                             direction.y * this.slamForce
@@ -261,7 +274,11 @@ class Bruiser extends Enemy {
             return;
         }
         
-        const distanceToTarget = this.transform.distanceTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!transform || !targetTransform) return;
+        
+        const distanceToTarget = transform.distanceTo(targetTransform);
         
         if (distanceToTarget <= this.attackRange) {
             this.behaviorState = 'attacking';

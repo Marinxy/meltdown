@@ -15,12 +15,16 @@ class Spitter extends Enemy {
         const physics = this.getComponent('Physics');
         if (!physics) return;
         
-        const distanceToTarget = this.transform.distanceTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!transform || !targetTransform) return;
+        
+        const distanceToTarget = transform.distanceTo(targetTransform);
         
         // Maintain optimal distance
         if (distanceToTarget < this.keepDistance) {
             // Move away from target
-            const direction = this.target.transform.directionTo(this.transform);
+            const direction = targetTransform.directionTo(transform);
             const retreatForce = 250;
             physics.applyForce(
                 direction.x * retreatForce,
@@ -28,7 +32,7 @@ class Spitter extends Enemy {
             );
         } else if (distanceToTarget > this.attackRange) {
             // Move closer to target
-            const direction = this.transform.directionTo(this.target.transform);
+            const direction = transform.directionTo(targetTransform);
             const approachForce = 200;
             physics.applyForce(
                 direction.x * approachForce,
@@ -37,7 +41,7 @@ class Spitter extends Enemy {
         }
         
         // Always face target
-        this.transform.rotation = this.transform.angleTo(this.target.transform);
+        transform.rotation = transform.angleTo(targetTransform);
     }
 
     performAttack() {
@@ -73,7 +77,11 @@ class Spitter extends Enemy {
         const targetPos = this.target.getPosition();
         
         // Calculate aim with some inaccuracy
-        let aimAngle = this.transform.angleTo(this.target.transform);
+        const enemyTransform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!enemyTransform || !targetTransform) return;
+        
+        let aimAngle = enemyTransform.angleTo(targetTransform);
         
         // Add inaccuracy based on accuracy stat
         const maxInaccuracy = (1 - this.aimAccuracy) * Math.PI / 4; // Up to 45 degrees
@@ -88,8 +96,8 @@ class Spitter extends Enemy {
         
         // Spawn slightly in front of spitter
         const spawnDistance = 20;
-        const spawnX = startPos.x + Math.cos(aimAngle) * spawnDistance;
-        const spawnY = startPos.y + Math.sin(aimAngle) * spawnDistance;
+        const spawnX = enemyTransform.x + Math.cos(aimAngle) * spawnDistance;
+        const spawnY = enemyTransform.y + Math.sin(aimAngle) * spawnDistance;
         
         const transform = new Transform(spawnX, spawnY, aimAngle);
         projectile.addComponent(transform);
@@ -222,6 +230,9 @@ class Spitter extends Enemy {
     // Override idle behavior to be more alert
     idleBehavior() {
         // Spitters are more alert, slowly rotate to scan for targets
-        this.transform.rotation += 0.5 * (Math.PI / 180); // Rotate 0.5 degrees per frame
+        const transform = this.getComponent('Transform');
+        if (transform) {
+            transform.rotation += 0.5 * (Math.PI / 180); // Rotate 0.5 degrees per frame
+        }
     }
 }

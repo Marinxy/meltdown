@@ -15,7 +15,11 @@ class Grunt extends Enemy {
         const physics = this.getComponent('Physics');
         if (!physics) return;
         
-        const distanceToTarget = this.transform.distanceTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (!transform || !targetTransform) return;
+        
+        const distanceToTarget = transform.distanceTo(targetTransform);
         
         // Check if should charge
         if (this.chargeCooldown <= 0 && distanceToTarget <= this.chargeDistance && distanceToTarget > this.attackRange) {
@@ -32,7 +36,11 @@ class Grunt extends Enemy {
         this.chargeCooldown = 3000; // 3 second cooldown
         
         // Calculate charge direction
-        this.chargeDirection = this.transform.directionTo(this.target.transform);
+        const transform = this.getComponent('Transform');
+        const targetTransform = this.target.getComponent('Transform');
+        if (transform && targetTransform) {
+            this.chargeDirection = transform.directionTo(targetTransform);
+        }
         
         // Visual effect for charge
         const render = this.getComponent('Render');
@@ -93,9 +101,11 @@ class Grunt extends Enemy {
         // Grunt has a chance to knockback on attack
         if (this.target && Math.random() < 0.3) {
             const targetPhysics = this.target.getComponent('Physics');
-            if (targetPhysics) {
+            const transform = this.getComponent('Transform');
+            const targetTransform = this.target.getComponent('Transform');
+            if (targetPhysics && transform && targetTransform) {
                 const knockbackForce = 300;
-                const direction = this.transform.directionTo(this.target.transform);
+                const direction = transform.directionTo(targetTransform);
                 targetPhysics.applyImpulse(
                     direction.x * knockbackForce,
                     direction.y * knockbackForce
