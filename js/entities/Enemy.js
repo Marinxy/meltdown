@@ -205,7 +205,7 @@ class Enemy extends Entity {
         if (window.gameInstance && window.gameInstance.physicsSystem) {
             const nearbyPlayers = window.gameInstance.physicsSystem
                 .getEntitiesInRadius(this.transform.x, this.transform.y, this.aggroRange)
-                .filter(entity => entity.hasTag('player') && !entity.getComponent('Health').isDead());
+                .filter(entity => entity.hasTag('player') && entity.getComponent('Health') && !entity.getComponent('Health').isDead());
             
             if (nearbyPlayers.length > 0) {
                 // Find closest player

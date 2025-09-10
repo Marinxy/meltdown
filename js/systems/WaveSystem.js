@@ -6,7 +6,7 @@ class WaveSystem extends System {
         this.waveActive = false;
         this.waveStartTime = 0;
         this.waveDuration = 60000; // 60 seconds per wave
-        this.timeBetweenWaves = 10000; // 10 seconds between waves
+        this.timeBetweenWaves = 2000; // 2 seconds between waves
         this.nextWaveTimer = 0;
         this.waveComplete = false;
         
@@ -135,6 +135,7 @@ class WaveSystem extends System {
     }
 
     startNextWave() {
+        console.log(`Starting wave ${this.currentWave}`);
         this.waveActive = true;
         this.waveStartTime = Date.now();
         this.nextWaveTimer = 0;
@@ -183,19 +184,30 @@ class WaveSystem extends System {
     }
 
     shouldSpawnEnemy() {
-        return this.spawnTimer <= 0 && 
+        const canSpawn = this.spawnTimer <= 0 && 
                this.enemiesSpawnedThisWave < this.enemiesToSpawnThisWave &&
                this.getCurrentEnemyCount() < this.maxConcurrentEnemies &&
                this.hasActivePlayers();
+        
+        if (canSpawn) {
+            console.log(`Should spawn enemy: timer=${this.spawnTimer}, spawned=${this.enemiesSpawnedThisWave}/${this.enemiesToSpawnThisWave}, current=${this.getCurrentEnemyCount()}/${this.maxConcurrentEnemies}, hasPlayers=${this.hasActivePlayers()}`);
+        }
+        
+        return canSpawn;
     }
 
     spawnWaveEnemy() {
         const enemyType = this.selectEnemyTypeForWave();
+        console.log(`Attempting to spawn enemy type: ${enemyType}`);
         
         if (window.enemyManager) {
             const spawnPoint = window.enemyManager.selectSpawnPoint();
+            console.log(`Spawn point:`, spawnPoint);
+            
             if (spawnPoint) {
                 const enemy = window.enemyManager.createEnemy(enemyType, spawnPoint.x, spawnPoint.y);
+                console.log(`Created enemy:`, enemy);
+                
                 if (enemy) {
                     // Apply wave-specific scaling
                     this.applyWaveScaling(enemy);
@@ -206,6 +218,7 @@ class WaveSystem extends System {
                     }
                     
                     this.enemiesSpawnedThisWave++;
+                    console.log(`Enemy spawned successfully! Total spawned: ${this.enemiesSpawnedThisWave}`);
                     
                     // Emit spawn event
                     if (window.gameInstance) {
@@ -215,8 +228,14 @@ class WaveSystem extends System {
                             spawnIndex: this.enemiesSpawnedThisWave
                         });
                     }
+                } else {
+                    console.log(`Failed to create enemy of type: ${enemyType}`);
                 }
+            } else {
+                console.log(`No spawn point available`);
             }
+        } else {
+            console.log(`EnemyManager not available`);
         }
     }
 
@@ -341,10 +360,10 @@ class WaveSystem extends System {
     }
 
     hasActivePlayers() {
-        if (!window.gameInstance || !window.gameInstance.physicsSystem) return false;
+        if (!window.gameInstance) return false;
         
-        return window.gameInstance.physicsSystem.entities
-            .some(entity => entity.hasTag('player') && !entity.getComponent('Health').isDead());
+        return window.gameInstance.entities
+            .some(entity => entity.hasTag('player') && entity.getComponent('Health') && !entity.getComponent('Health').isDead());
     }
 
     clearNonBossEnemies() {

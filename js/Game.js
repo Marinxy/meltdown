@@ -60,7 +60,8 @@ class Game {
 
     initializeSystems() {
         // Create core systems
-        this.systems.push(new PhysicsSystem());
+        this.physicsSystem = new PhysicsSystem();
+        this.systems.push(this.physicsSystem);
         this.systems.push(new RenderSystem(this.ctx));
         this.audioSystem = new AudioSystem();
         this.systems.push(this.audioSystem);
@@ -73,6 +74,9 @@ class Game {
         
         // Initialize enemy manager with canvas dimensions
         this.enemyManager.initialize(this.canvas.width, this.canvas.height);
+        
+        // Set global reference for WaveSystem
+        window.enemyManager = this.enemyManager;
         
         this.systems.push(this.enemyManager);
         this.systems.push(this.waveSystem);
@@ -348,6 +352,7 @@ class Game {
 
     addEntity(entity) {
         this.entities.push(entity);
+        console.log(`Added entity to game: ${entity.constructor.name}, total entities: ${this.entities.length}`);
     }
 
     removeEntity(entity) {
