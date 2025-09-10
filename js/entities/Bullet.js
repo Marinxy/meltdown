@@ -4,14 +4,14 @@ class Bullet extends Entity {
         super();
         
         // Add components
-        this.addComponent('Transform', new Transform(x, y, angle));
-        this.addComponent('Physics', new Physics(
+        this.addComponent(new Transform(x, y, angle));
+        this.addComponent(new Physics(
             Math.cos(angle) * speed,
             Math.sin(angle) * speed,
             0, 0, 0.98 // slight drag
         ));
-        this.addComponent('Render', new Render(options.color || '#ffff00', 4, 2));
-        this.addComponent('Health', new Health(1));
+        this.addComponent(new Render('bullet', options.color || '#ffff00'));
+        this.addComponent(new Health(1));
         
         // Bullet properties
         this.damage = damage;
@@ -145,12 +145,16 @@ class Bullet extends Entity {
         
         // Bullet body
         ctx.fillStyle = render.color;
-        ctx.fillRect(-render.width/2, -render.height/2, render.width, render.height);
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
         
         // Glow effect
         ctx.shadowColor = render.color;
         ctx.shadowBlur = 8;
-        ctx.fillRect(-render.width/2, -render.height/2, render.width, render.height);
+        ctx.beginPath();
+        ctx.arc(0, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
         
         ctx.restore();
     }

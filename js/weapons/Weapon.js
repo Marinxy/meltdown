@@ -83,9 +83,12 @@ class Weapon {
         
         // Add bullets to game
         if (window.gameInstance && bullets.length > 0) {
+            console.log(`Firing ${bullets.length} bullets`);
             for (const bullet of bullets) {
                 window.gameInstance.addEntity(bullet);
             }
+        } else {
+            console.log('No bullets created or gameInstance not available');
         }
 
         // Play sound effect
