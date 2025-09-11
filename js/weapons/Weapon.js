@@ -106,9 +106,11 @@ class Weapon {
     }
 
     createBullets() {
-        if (!this.owner || !this.owner.transform) return [];
+        if (!this.owner) return [];
 
-        const transform = this.owner.transform;
+        const transform = this.owner.getComponent('Transform');
+        if (!transform) return [];
+        
         const bullets = [];
         
         // Calculate bullet spawn position (slightly in front of player)

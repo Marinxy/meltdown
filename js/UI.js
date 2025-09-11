@@ -13,12 +13,7 @@ class UI {
         // Main Menu buttons
         document.getElementById('startGame').addEventListener('click', () => {
             console.log('Start Game clicked!');
-            this.game.startGame();
-            this.showScreen('gameScreen');
-            console.log('Switched to game screen');
-        });
-
-        document.getElementById('classSelect').addEventListener('click', () => {
+            // Always show class selection first
             this.showScreen('classSelection');
         });
 
@@ -40,6 +35,19 @@ class UI {
 
         document.getElementById('backToMenu').addEventListener('click', () => {
             this.showScreen('mainMenu');
+        });
+
+        document.getElementById('startFromClassSelection').addEventListener('click', () => {
+            // Check if class is selected
+            if (!this.selectedClass) {
+                alert('Please select a class first!');
+                return;
+            }
+            
+            // Start the game
+            this.game.startGame();
+            this.showScreen('gameScreen');
+            console.log('Game started from class selection');
         });
 
         // Pause Menu
@@ -74,6 +82,45 @@ class UI {
         // Initial class selection
         document.querySelector(`[data-class="${this.selectedClass}"]`).classList.add('selected');
         this.updateClassInfo();
+        
+        // Setup timer event listeners
+        this.setupTimerEventListeners();
+    }
+    
+    setupTimerEventListeners() {
+        // Wave countdown timer
+        EventManager.on('wave_countdown_update', (data) => {
+            this.updateWaveCountdown(data.secondsLeft, data.waveNumber);
+        });
+        
+        // Spawn ETA timer
+        EventManager.on('spawn_eta_update', (data) => {
+            this.updateSpawnETA(data.secondsLeft, data.enemiesRemaining);
+        });
+        
+        // Boss countdown timer
+        EventManager.on('boss_countdown_update', (data) => {
+            this.updateBossCountdown(data.secondsLeft, data.waveNumber);
+        });
+        
+        // Wave progress updates
+        EventManager.on('wave_progress_update', (data) => {
+            this.updateWaveProgress(data);
+        });
+        
+        // Wave started - hide countdown, show progress
+        EventManager.on('wave_started', (data) => {
+            this.hideWaveCountdown();
+            this.showWaveProgress();
+            if (!data.isBossWave) {
+                this.showSpawnETA();
+            }
+        });
+        
+        // Wave completed - hide all timers
+        EventManager.on('wave_completed', () => {
+            this.hideAllTimers();
+        });
     }
 
     showScreen(screenName) {
@@ -135,6 +182,20 @@ class UI {
         // Update wave info
         if (gameData.wave !== undefined) {
             document.getElementById('waveNumber').textContent = gameData.wave;
+        }
+        
+        // Wave countdown display
+        const waveCountdownEl = document.getElementById('waveCountdown');
+        const countdownTimerEl = document.getElementById('countdownTimer');
+        
+        if (waveCountdownEl && countdownTimerEl && this.game.waveSystem) {
+            if (!this.game.waveSystem.waveActive && this.game.waveSystem.nextWaveTimer > 0) {
+                const countdown = Math.ceil(this.game.waveSystem.nextWaveTimer / 1000);
+                waveCountdownEl.style.display = 'block';
+                countdownTimerEl.textContent = countdown;
+            } else {
+                waveCountdownEl.style.display = 'none';
+            }
         }
 
         // Update score
@@ -267,5 +328,98 @@ class UI {
                 flash.parentNode.removeChild(flash);
             }
         }, 500);
+    }
+    
+    // Timer update methods
+    updateWaveCountdown(secondsLeft, waveNumber) {
+        const countdownElement = document.getElementById('waveCountdown');
+        const timerElement = document.getElementById('countdownTimer');
+        
+        if (countdownElement && timerElement) {
+            countdownElement.style.display = 'block';
+            timerElement.textContent = secondsLeft;
+            
+            // Add pulsing effect for last 3 seconds
+            if (secondsLeft <= 3) {
+                timerElement.style.animation = 'pulse 1s infinite';
+                timerElement.style.color = '#ff0000';
+            } else {
+                timerElement.style.animation = 'none';
+                timerElement.style.color = '#00ffff';
+            }
+        }
+    }
+    
+    updateSpawnETA(secondsLeft, enemiesRemaining) {
+        const etaElement = document.getElementById('spawnEta');
+        const timerElement = document.getElementById('etaTimer');
+        
+        if (etaElement && timerElement && enemiesRemaining > 0) {
+            etaElement.style.display = 'block';
+            timerElement.textContent = `${secondsLeft.toFixed(1)}s`;
+        } else if (etaElement) {
+            etaElement.style.display = 'none';
+        }
+    }
+    
+    updateBossCountdown(secondsLeft, waveNumber) {
+        const countdownElement = document.getElementById('waveCountdown');
+        const timerElement = document.getElementById('countdownTimer');
+        const labelElement = countdownElement?.querySelector('.countdown-label');
+        
+        if (countdownElement && timerElement && labelElement) {
+            countdownElement.style.display = 'block';
+            labelElement.textContent = 'BOSS INCOMING';
+            timerElement.textContent = secondsLeft;
+            timerElement.style.color = '#ff0000';
+            timerElement.style.animation = 'pulse 0.5s infinite';
+        }
+    }
+    
+    updateWaveProgress(data) {
+        const progressElement = document.getElementById('waveProgress');
+        const fillElement = document.getElementById('progressFill');
+        const textElement = document.getElementById('progressText');
+        
+        if (progressElement && fillElement && textElement) {
+            progressElement.style.display = 'block';
+            
+            const progressPercent = (data.progress * 100).toFixed(1);
+            fillElement.style.width = `${progressPercent}%`;
+            
+            textElement.textContent = `${data.enemiesSpawned}/${data.enemiesToSpawn} spawned, ${data.enemiesAlive} alive`;
+        }
+    }
+    
+    // Timer visibility methods
+    hideWaveCountdown() {
+        const countdownElement = document.getElementById('waveCountdown');
+        if (countdownElement) {
+            countdownElement.style.display = 'none';
+        }
+    }
+    
+    showWaveProgress() {
+        const progressElement = document.getElementById('waveProgress');
+        if (progressElement) {
+            progressElement.style.display = 'block';
+        }
+    }
+    
+    showSpawnETA() {
+        const etaElement = document.getElementById('spawnEta');
+        if (etaElement) {
+            etaElement.style.display = 'block';
+        }
+    }
+    
+    hideAllTimers() {
+        const timers = ['waveCountdown', 'waveProgress', 'spawnEta'];
+        timers.forEach(timerId => {
+            const element = document.getElementById(timerId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        });
     }
 }

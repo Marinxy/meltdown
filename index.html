@@ -20,7 +20,6 @@
                 
                 <div class="menu-buttons">
                     <button id="startGame" class="menu-btn primary">START GAME</button>
-                    <button id="classSelect" class="menu-btn">SELECT CLASS</button>
                     <button id="options" class="menu-btn">OPTIONS</button>
                     <button id="credits" class="menu-btn">CREDITS</button>
                 </div>
@@ -86,7 +85,10 @@
                         <div class="class-desc">Team sustain specialist</div>
                     </div>
                 </div>
-                <button id="backToMenu" class="menu-btn">BACK</button>
+                <div class="class-selection-buttons">
+                    <button id="backToMenu" class="menu-btn">BACK</button>
+                    <button id="startFromClassSelection" class="menu-btn primary">START GAME</button>
+                </div>
             </div>
         </div>
 
@@ -94,8 +96,18 @@
         <div id="gameScreen" class="screen">
             <canvas id="gameCanvas" width="1200" height="800"></canvas>
             
+            <!-- Debug Display -->
+            <div id="debugDisplay" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #00ff00; padding: 10px; font-family: monospace; font-size: 12px; z-index: 1000; display: none;">
+                <div>Game State: <span id="debugGameState">unknown</span></div>
+                <div>Wave System Active: <span id="debugWaveActive">unknown</span></div>
+                <div>Current Wave: <span id="debugCurrentWave">0</span></div>
+                <div>Next Wave Timer: <span id="debugNextWaveTimer">0</span></div>
+                <div>Wave Start Countdown: <span id="debugWaveStartCountdown">0</span></div>
+            </div>
+            
             <!-- HUD Overlay -->
             <div id="gameHUD">
+                <!-- Top HUD -->
                 <div class="hud-top">
                     <div class="hud-left">
                         <div class="health-bar">
@@ -103,6 +115,20 @@
                             <span class="health-text" id="healthText">150/150</span>
                         </div>
                         <div class="class-info" id="classInfo">HEAVY</div>
+                        <div class="player-stats">
+                            <div class="stat-item">
+                                <span class="stat-label">KILLS:</span>
+                                <span class="stat-value" id="killCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">DEATHS:</span>
+                                <span class="stat-value" id="deathCount">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">SPEED:</span>
+                                <span class="stat-value" id="speedStat">120</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="hud-center">
@@ -110,22 +136,59 @@
                             <span class="wave-label">WAVE</span>
                             <span class="wave-number" id="waveNumber">1</span>
                         </div>
+                        <div class="wave-countdown" id="waveCountdown" style="display: none;">
+                            <div class="countdown-label">NEXT WAVE IN</div>
+                            <div class="countdown-timer" id="countdownTimer">3</div>
+                        </div>
+                        <div class="wave-progress" id="waveProgress" style="display: none;">
+                            <div class="progress-label">WAVE PROGRESS</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <div class="progress-text" id="progressText">0/10 enemies</div>
+                        </div>
+                        <div class="spawn-eta" id="spawnEta" style="display: none;">
+                            <div class="eta-label">NEXT SPAWN</div>
+                            <div class="eta-timer" id="etaTimer">3.2s</div>
+                        </div>
                         <div class="chaos-meter">
                             <div class="chaos-fill" id="chaosFill"></div>
                             <span class="chaos-label">CHAOS</span>
                         </div>
                     </div>
                     
-                    <div class="hud-right">
-                        <div class="score" id="score">0</div>
-                        <div class="enemies-left" id="enemiesLeft">10</div>
+                    <div class="hud-top-right">
+                        <div class="score-info">
+                            <div class="score-label">SCORE</div>
+                            <div class="score" id="score">0</div>
+                        </div>
+                        <div class="enemies-info">
+                            <div class="enemies-label">ENEMIES</div>
+                            <div class="enemies-left" id="enemiesLeft">0</div>
+                        </div>
                     </div>
                 </div>
                 
+                <!-- Bottom HUD -->
                 <div class="hud-bottom">
-                    <div class="special-ability" id="specialAbility">
-                        <div class="ability-icon">🔥</div>
-                        <div class="ability-cooldown" id="abilityCooldown"></div>
+                    <div class="hud-bottom-left">
+                        <div class="special-ability">
+                            <div class="ability-icon">⚡</div>
+                            <div class="ability-cooldown" id="abilityCooldown"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="hud-bottom-right">
+                        <!-- Minimap/Radar -->
+                        <div class="minimap-container">
+                            <div class="minimap-title">RADAR</div>
+                            <canvas id="minimap" width="150" height="150"></canvas>
+                            <div class="minimap-legend">
+                                <div class="legend-item"><span class="player-dot"></span>YOU</div>
+                                <div class="legend-item"><span class="enemy-dot"></span>ENEMIES</div>
+                                <div class="legend-item"><span class="spawn-dot"></span>SPAWNS</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,6 +253,12 @@
     <script src="js/systems/PhysicsSystem.js"></script>
     <script src="js/systems/RenderSystem.js"></script>
     <script src="js/systems/AudioSystem.js"></script>
+    <script src="js/systems/ChaosSystem.js"></script>
+    <script src="js/systems/ParticleSystem.js"></script>
+    <script src="js/systems/WaveSystem.js"></script>
+    <script src="js/systems/InputSystem.js"></script>
+    <script src="js/systems/CameraSystem.js"></script>
+    <script src="js/systems/MinimapSystem.js"></script>
     <script src="js/entities/Player.js"></script>
     <script src="js/entities/Enemy.js"></script>
     <script src="js/entities/Grunt.js"></script>
@@ -205,9 +274,7 @@
     <script src="js/weapons/SMG.js"></script>
     <script src="js/weapons/Shotgun.js"></script>
     <script src="js/weapons/HealBeam.js"></script>
-    <script src="js/systems/WaveSystem.js"></script>
-    <script src="js/systems/ChaosSystem.js"></script>
-    <script src="js/systems/ParticleSystem.js"></script>
+    <script src="js/weapons/WeaponManager.js"></script>
     <script src="js/Game.js"></script>
     <script src="js/UI.js"></script>
     <script src="js/main.js"></script>

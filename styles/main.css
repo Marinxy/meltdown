@@ -196,6 +196,19 @@ body::before {
     padding-top: 1rem;
 }
 
+/* Class Selection Buttons */
+.class-selection-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.class-selection-buttons .menu-btn {
+    flex: 1;
+    max-width: 200px;
+}
+
 /* Class Selection */
 .class-content {
     text-align: center;
@@ -333,6 +346,31 @@ body::before {
     font-size: 1rem;
     font-weight: 700;
     color: var(--neon-blue);
+    margin-bottom: 0.5rem;
+}
+
+.player-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.stat-value {
+    color: var(--neon-green);
+    font-weight: 700;
+    text-shadow: 0 0 5px var(--neon-green);
 }
 
 /* Wave Info */
@@ -551,6 +589,118 @@ body::before {
     animation: shake 0.5s ease-in-out;
 }
 
+/* Timer Elements */
+.wave-countdown {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.countdown-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.countdown-timer {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--neon-blue);
+    text-shadow: 0 0 15px var(--neon-blue);
+    transition: all 0.3s ease;
+}
+
+.wave-progress {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.progress-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.progress-bar {
+    width: 250px;
+    height: 12px;
+    background: var(--darker-bg);
+    border: 2px solid var(--neon-green);
+    position: relative;
+    margin: 0 auto 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+    width: 0%;
+    transition: width 0.5s ease;
+    animation: progressGlow 2s infinite alternate;
+}
+
+@keyframes progressGlow {
+    0% { box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.5); }
+    100% { box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.8); }
+}
+
+.progress-text {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.spawn-eta {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.eta-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.eta-timer {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--neon-orange);
+    text-shadow: 0 0 8px var(--neon-orange);
+}
+
+/* Timer Animations */
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% { 
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+@keyframes timerFlash {
+    0%, 100% { color: var(--neon-blue); }
+    50% { color: var(--danger-red); }
+}
+
+.countdown-timer.urgent {
+    animation: pulse 0.5s infinite, timerFlash 1s infinite;
+}
+
+/* Boss Warning Styles */
+.boss-countdown .countdown-label {
+    color: var(--danger-red);
+    animation: pulse 1s infinite;
+}
+
+.boss-countdown .countdown-timer {
+    color: var(--danger-red);
+    text-shadow: 0 0 20px var(--danger-red);
+    animation: pulse 0.5s infinite;
+}
+
 /* CRT Effect */
 .crt-effect {
     position: relative;
@@ -571,4 +721,286 @@ body::before {
         rgba(0, 255, 0, 0.03) 4px
     );
     pointer-events: none;
+}
+
+/* HUD Styles */
+#gameHUD {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 100;
+}
+
+/* Top HUD Layout */
+.hud-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.hud-left, .hud-center, .hud-top-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hud-center {
+    align-items: center;
+}
+
+.hud-top-right {
+    align-items: flex-end;
+}
+
+/* Bottom HUD Layout */
+.hud-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.hud-bottom-left, .hud-bottom-right {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hud-bottom-right {
+    align-items: flex-end;
+}
+
+/* Health Bar */
+.health-bar {
+    width: 200px;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--neon-green);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.health-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-green), #44ff44);
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--neon-green);
+}
+
+.health-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: bold;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Class Info */
+.class-info {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--neon-blue);
+    text-shadow: 0 0 5px var(--neon-blue);
+}
+
+/* Wave Info */
+.wave-info {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.wave-label {
+    display: block;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.wave-number {
+    color: var(--neon-orange);
+    text-shadow: 0 0 10px var(--neon-orange);
+}
+
+/* Chaos Meter */
+.chaos-meter {
+    width: 150px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid var(--neon-pink);
+    border-radius: 10px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.chaos-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-pink), #ff44ff);
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--neon-pink);
+}
+
+.chaos-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Score and Enemies Info */
+.score-info, .enemies-info {
+    text-align: right;
+}
+
+.score-label, .enemies-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.score {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--neon-blue);
+    text-shadow: 0 0 5px var(--neon-blue);
+}
+
+.enemies-left {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--danger-red);
+    text-shadow: 0 0 5px var(--danger-red);
+}
+
+/* Special Ability */
+.special-ability {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid var(--neon-blue);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 15px rgba(0, 150, 255, 0.3);
+}
+
+.ability-icon {
+    font-size: 24px;
+    color: var(--neon-blue);
+    text-shadow: 0 0 5px var(--neon-blue);
+}
+
+.ability-cooldown {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    transform-origin: bottom;
+    transition: transform 0.1s ease;
+}
+
+/* Minimap */
+.minimap-container {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid var(--neon-green);
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.minimap-title {
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--neon-green);
+    margin-bottom: 5px;
+    text-shadow: 0 0 5px var(--neon-green);
+}
+
+#minimap {
+    display: block;
+    border: 1px solid var(--grid-color);
+    background: #000;
+}
+
+.minimap-legend {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.player-dot, .enemy-dot, .spawn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.player-dot {
+    background: var(--neon-green);
+    box-shadow: 0 0 4px var(--neon-green);
+}
+
+.enemy-dot {
+    background: var(--danger-red);
+    box-shadow: 0 0 4px var(--danger-red);
+}
+
+.spawn-dot {
+    background: var(--warning-yellow);
+    box-shadow: 0 0 4px var(--warning-yellow);
+}
+
+/* Remove duplicate special ability styles - already defined above */
+
+/* Responsive adjustments */
+@media (max-width: 1400px) {
+    .minimap-container {
+        transform: scale(0.8);
+        transform-origin: top right;
+    }
+}
+
+@media (max-width: 1200px) {
+    .hud-top {
+        padding: 15px;
+    }
+    
+    .health-bar {
+        width: 150px;
+        height: 25px;
+    }
+    
+    .minimap-container {
+        transform: scale(0.7);
+    }
 }

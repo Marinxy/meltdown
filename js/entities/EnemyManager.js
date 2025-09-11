@@ -82,6 +82,11 @@ class EnemyManager {
     }
 
     shouldSpawnEnemy() {
+        // Don't auto-spawn if WaveSystem is managing spawning
+        if (window.gameInstance && window.gameInstance.waveSystem && window.gameInstance.waveSystem.waveActive) {
+            return false;
+        }
+        
         return this.spawnCooldown <= 0 && 
                this.activeEnemies.length < this.maxEnemies &&
                this.getActivePlayers().length > 0;

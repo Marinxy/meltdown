@@ -622,8 +622,8 @@ class Boss extends Enemy {
         
         // Award massive score
         if (source && source.hasTag && source.hasTag('player')) {
-            source.score += this.scoreValue;
-            source.kills++;
+            // Use the player's addKill method for proper tracking
+            source.addKill(this);
         }
         
         // Trigger victory condition

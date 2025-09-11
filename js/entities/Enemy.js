@@ -151,9 +151,9 @@ class Enemy extends Entity {
         // Update AI behavior
         this.updateAI(deltaTime);
         
-        // Update attack cooldown
+        // Update attack cooldown (convert deltaTime from seconds to milliseconds)
         if (this.attackCooldown > 0) {
-            this.attackCooldown -= deltaTime;
+            this.attackCooldown -= deltaTime * 1000;
         }
         
         // Check if stuck and handle
@@ -427,8 +427,8 @@ class Enemy extends Entity {
     onEnemyDeath(source) {
         // Award score to killer
         if (source && source.hasTag && source.hasTag('player')) {
-            source.score += this.scoreValue;
-            source.kills++;
+            // Use the player's addKill method for proper tracking
+            source.addKill(this);
             
             // Emit kill event
             if (window.gameInstance) {

@@ -57,7 +57,7 @@ class Player extends Entity {
         // Add Render component
         const render = new Render('player', classStats.color);
         render.layer = 5; // Players render above enemies
-        render.setGlow(10, classStats.color, 0.5);
+        // Removed glow effect to fix duplicate rendering
         this.addComponent(render);
     }
 

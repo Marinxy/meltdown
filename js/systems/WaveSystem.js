@@ -43,22 +43,25 @@ class WaveSystem extends System {
         this.waveStartDelay = 3000; // 3 second countdown before wave starts
         this.waveStartCountdown = 0;
         
+        // Boss timing
+        this.bossSpawnDelay = 5000; // 5 seconds after wave start
+        this.bossSpawnCountdown = 0;
+        this.bossSpawning = false;
+        
         // Events
         this.setupEventListeners();
     }
 
     setupEventListeners() {
-        if (window.gameInstance && window.gameInstance.eventManager) {
-            // Listen for enemy deaths
-            window.gameInstance.eventManager.on('enemy:killed', (enemy, killer) => {
-                this.onEnemyKilled(enemy, killer);
-            });
-            
-            // Listen for boss defeats
-            window.gameInstance.eventManager.on('boss:defeated', (boss, killer) => {
-                this.onBossDefeated(boss, killer);
-            });
-        }
+        // Listen for enemy deaths
+        EventManager.on('enemy:killed', (enemy, killer) => {
+            this.onEnemyKilled(enemy, killer);
+        });
+        
+        // Listen for boss defeats
+        EventManager.on('boss:defeated', (boss, killer) => {
+            this.onBossDefeated(boss, killer);
+        });
     }
 
     update(deltaTime) {
@@ -73,28 +76,81 @@ class WaveSystem extends System {
                 this.updateWaveStartCountdown();
             }
             
+            // Debug logging every second
+            if (Math.floor(this.nextWaveTimer / 1000) !== Math.floor((this.nextWaveTimer + deltaTime) / 1000)) {
+                console.log('WaveSystem: Countdown -', Math.ceil(this.nextWaveTimer / 1000), 'seconds left for wave', this.currentWave);
+            }
+            
+            // Emit wave preparation countdown
+            EventManager.emit('wave_countdown_update', {
+                secondsLeft: Math.ceil(this.nextWaveTimer / 1000),
+                waveNumber: this.currentWave,
+                isPreparation: true
+            });
+            
             if (this.nextWaveTimer <= 0) {
+                console.log('Starting next wave from timer');
                 this.startNextWave();
             }
         } else if (this.waveActive) {
             // Update active wave
             this.updateActiveWave(deltaTime);
+            
+            // Update boss countdown for boss waves
+            if (this.isBossWave() && this.bossSpawning && this.bossSpawnCountdown > 0) {
+                this.bossSpawnCountdown -= deltaTime;
+                EventManager.emit('boss_countdown_update', {
+                    secondsLeft: Math.ceil(this.bossSpawnCountdown / 1000),
+                    waveNumber: this.currentWave
+                });
+                
+                if (this.bossSpawnCountdown <= 0) {
+                    this.spawnBoss();
+                    this.bossSpawning = false;
+                }
+            }
+            
+            // Emit spawn ETA updates
+            if (this.spawnTimer > 0 && this.enemiesSpawnedThisWave < this.enemiesToSpawnThisWave) {
+                EventManager.emit('spawn_eta_update', {
+                    secondsLeft: Math.max(0, this.spawnTimer / 1000),
+                    enemiesRemaining: this.enemiesToSpawnThisWave - this.enemiesSpawnedThisWave
+                });
+            }
+            
+            // Emit wave progress updates
+            EventManager.emit('wave_progress_update', {
+                waveNumber: this.currentWave,
+                enemiesSpawned: this.enemiesSpawnedThisWave,
+                enemiesToSpawn: this.enemiesToSpawnThisWave,
+                enemiesAlive: this.getCurrentEnemyCount(),
+                progress: this.getWaveProgress()
+            });
+            
+        } else if (this.currentWave === 0) {
+            // Start first wave automatically
+            console.log('Starting first wave automatically');
+            this.prepareNextWave();
         }
     }
 
     startGame() {
+        console.log('WaveSystem: startGame() called');
         this.currentWave = 0;
         this.totalEnemiesKilled = 0;
         this.difficultyMultiplier = 1.0;
         this.prepareNextWave();
+        console.log('WaveSystem: startGame() completed, currentWave:', this.currentWave);
     }
 
     prepareNextWave() {
         this.currentWave++;
+        console.log('WaveSystem: prepareNextWave() - Wave', this.currentWave);
         this.waveActive = false;
         this.waveComplete = false;
-        this.nextWaveTimer = this.timeBetweenWaves;
+        this.nextWaveTimer = this.waveStartDelay; // Use the full countdown time
         this.waveStartCountdown = this.waveStartDelay;
+        console.log('WaveSystem: nextWaveTimer set to', this.nextWaveTimer, 'waveStartCountdown set to', this.waveStartCountdown);
         
         // Calculate wave parameters
         this.calculateWaveParameters();
@@ -141,6 +197,12 @@ class WaveSystem extends System {
         this.nextWaveTimer = 0;
         this.waveStartCountdown = 0;
         
+        // Setup boss spawning for boss waves
+        if (this.isBossWave()) {
+            this.bossSpawning = true;
+            this.bossSpawnCountdown = this.bossSpawnDelay;
+        }
+        
         // Clear any remaining enemies from previous wave
         if (window.enemyManager) {
             // Don't clear bosses, let them carry over
@@ -172,6 +234,11 @@ class WaveSystem extends System {
     updateActiveWave(deltaTime) {
         // Update spawn timer
         this.spawnTimer -= deltaTime;
+        
+        // Debug logging
+        if (this.spawnTimer <= 0) {
+            console.log(`Wave ${this.currentWave} active - Timer: ${this.spawnTimer}, Spawned: ${this.enemiesSpawnedThisWave}/${this.enemiesToSpawnThisWave}`);
+        }
         
         // Spawn enemies if needed
         if (this.shouldSpawnEnemy()) {
@@ -474,6 +541,16 @@ class WaveSystem extends System {
                     reason: 'boss_defeat'
                 });
             }
+        }
+    }
+
+    spawnBoss() {
+        console.log(`Spawning boss for wave ${this.currentWave}`);
+        if (window.enemyManager) {
+            window.enemyManager.spawnBoss(this.currentWave);
+            EventManager.emit('boss_spawned', {
+                waveNumber: this.currentWave
+            });
         }
     }
 

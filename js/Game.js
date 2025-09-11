@@ -15,6 +15,13 @@ class Game {
         this.enemiesKilled = 0;
         this.startTime = 0;
         
+        // Special ability system
+        this.specialAbility = {
+            cooldown: 0,
+            maxCooldown: 5000, // 5 seconds
+            isReady: true
+        };
+        
         // Managers
         this.assetManager = new AssetManager();
         this.audioEngine = new AudioEngine();
@@ -59,32 +66,40 @@ class Game {
     }
 
     initializeSystems() {
-        // Create core systems
+        // Initialize core systems
+        this.renderSystem = new RenderSystem(this.ctx);
         this.physicsSystem = new PhysicsSystem();
-        this.systems.push(this.physicsSystem);
-        this.systems.push(new RenderSystem(this.ctx));
-        this.audioSystem = new AudioSystem();
-        this.systems.push(this.audioSystem);
-        
-        // Create game systems
-        this.enemyManager = new EnemyManager();
-        this.waveSystem = new WaveSystem();
-        this.chaosSystem = new ChaosSystem();
+        this.audioSystem = new AudioSystem(this.audioEngine);
         this.particleSystem = new ParticleSystem();
+        this.chaosSystem = new ChaosSystem();
+        this.waveSystem = new WaveSystem();
         
-        // Initialize enemy manager with canvas dimensions
+        // Add new systems
+        this.inputSystem = new InputSystem();
+        this.cameraSystem = new CameraSystem(this.canvas);
+        this.minimapSystem = new MinimapSystem();
+        this.minimapSystem.initialize();
+        
+        // Initialize managers
+        this.enemyManager = new EnemyManager();
         this.enemyManager.initialize(this.canvas.width, this.canvas.height);
         
-        // Set global reference for WaveSystem
+        // Set global references for systems to access
         window.enemyManager = this.enemyManager;
+        window.gameInstance = this;
         
-        this.systems.push(this.enemyManager);
-        this.systems.push(this.waveSystem);
-        this.systems.push(this.chaosSystem);
-        this.systems.push(this.particleSystem);
-        
-        // Sort systems by priority
-        this.systems.sort((a, b) => (a.priority || 0) - (b.priority || 0));
+        // Add systems to update list
+        this.systems = [
+            this.inputSystem,
+            this.physicsSystem,
+            this.cameraSystem,
+            this.waveSystem,
+            this.chaosSystem,
+            this.particleSystem,
+            this.audioSystem,
+            this.minimapSystem,
+            this.renderSystem
+        ];
     }
 
     setupInput() {
@@ -99,6 +114,10 @@ class Game {
                 } else if (this.gameState === 'paused') {
                     this.resumeGame();
                 }
+            }
+            
+            if (e.code === 'Space' && this.gameState === 'playing' && this.specialAbility.isReady) {
+                this.useSpecialAbility();
             }
         });
 
@@ -144,6 +163,7 @@ class Game {
     }
 
     startGame() {
+        console.log('Game.startGame() called - gameState changing to playing');
         this.gameState = 'playing';
         this.startTime = Date.now();
         this.score = 0;
@@ -157,8 +177,16 @@ class Game {
         this.createPlayer();
         
         // Start systems
+        console.log('Game: Starting wave system...');
         this.waveSystem.startGame();
+        console.log('Game: Starting chaos system...');
         this.chaosSystem.resetChaos();
+        
+        // Show debug display
+        const debugDisplay = document.getElementById('debugDisplay');
+        if (debugDisplay) {
+            debugDisplay.style.display = 'block';
+        }
         
         // Start game loop
         this.running = true;
@@ -239,6 +267,15 @@ class Game {
     }
 
     update(deltaTime) {
+        // Update special ability cooldown
+        if (!this.specialAbility.isReady) {
+            this.specialAbility.cooldown -= deltaTime * 1000;
+            if (this.specialAbility.cooldown <= 0) {
+                this.specialAbility.isReady = true;
+                this.specialAbility.cooldown = 0;
+            }
+        }
+        
         // Update entities
         for (let i = this.entities.length - 1; i >= 0; i--) {
             const entity = this.entities[i];
@@ -250,9 +287,9 @@ class Game {
             }
         }
         
-        // Update systems
+        // Update systems (convert deltaTime back to milliseconds)
         for (const system of this.systems) {
-            system.update(deltaTime, this.entities);
+            system.update(deltaTime * 1000, this.entities);
         }
         
         // Handle collisions
@@ -260,6 +297,9 @@ class Game {
         
         // Update UI
         this.updateUI();
+        
+        // Update debug display
+        this.updateDebugDisplay();
     }
 
     handleCollisions() {
@@ -317,17 +357,30 @@ class Game {
         this.ctx.fillStyle = '#0a0a0a';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // Render systems handle entity rendering
-        for (const system of this.systems) {
-            if (system.render) {
-                system.render(this.ctx, this.entities);
-            }
-        }
+        // Apply camera transform
+        this.cameraSystem.applyTransform(this.ctx);
         
-        // Render entities that have custom render methods
-        for (const entity of this.entities) {
-            if (entity.render) {
-                entity.render(this.ctx);
+        // Render all entities
+        this.renderSystem.render(this.ctx, this.entities);
+        
+        // Reset camera transform
+        this.cameraSystem.resetTransform(this.ctx);
+        
+        // Render UI elements (not affected by camera)
+        this.renderUI();
+    }
+
+    renderUI() {
+        // Basic HUD rendering
+        this.ctx.fillStyle = '#00ff00';
+        this.ctx.font = '20px Orbitron';
+        this.ctx.fillText(`Score: ${this.score}`, 20, 30);
+        this.ctx.fillText(`Wave: ${this.wave}`, 20, 60);
+        
+        if (this.player) {
+            const health = this.player.getComponent('Health');
+            if (health) {
+                this.ctx.fillText(`Health: ${health.current}/${health.max}`, 20, 90);
             }
         }
     }
@@ -342,12 +395,64 @@ class Game {
             document.getElementById('healthText').textContent = `${health.current}/${health.max}`;
         }
         
+        // Update class info display
+        const classInfo = document.getElementById('classInfo');
+        if (classInfo && this.player.playerClass) {
+            classInfo.textContent = this.player.playerClass.toUpperCase();
+        }
+        
+        // Update player statistics
+        const killCountElement = document.getElementById('killCount');
+        const deathCountElement = document.getElementById('deathCount');
+        const speedStatElement = document.getElementById('speedStat');
+        
+        if (killCountElement) {
+            killCountElement.textContent = this.player.kills || 0;
+        }
+        if (deathCountElement) {
+            deathCountElement.textContent = this.player.deaths || 0;
+        }
+        if (speedStatElement) {
+            const physics = this.player.getComponent('Physics');
+            const currentSpeed = physics ? Math.round(physics.maxSpeed) : 0;
+            speedStatElement.textContent = currentSpeed;
+        }
+        
         document.getElementById('waveNumber').textContent = this.wave;
         document.getElementById('score').textContent = this.score;
+        document.getElementById('enemiesLeft').textContent = this.enemiesRemaining;
         
         // Update chaos meter
         const chaosLevel = this.chaosSystem ? this.chaosSystem.chaosLevel : 0;
         document.getElementById('chaosFill').style.width = `${chaosLevel * 100}%`;
+        
+        // Update special ability cooldown
+        const abilityCooldownElement = document.getElementById('abilityCooldown');
+        if (abilityCooldownElement) {
+            if (this.specialAbility.isReady) {
+                abilityCooldownElement.style.transform = 'scaleY(0)';
+                abilityCooldownElement.textContent = '';
+            } else {
+                const cooldownPercent = this.specialAbility.cooldown / this.specialAbility.maxCooldown;
+                abilityCooldownElement.style.transform = `scaleY(${cooldownPercent})`;
+                const secondsLeft = Math.ceil(this.specialAbility.cooldown / 1000);
+                abilityCooldownElement.textContent = secondsLeft > 0 ? secondsLeft : '';
+            }
+        }
+    }
+    
+    updateDebugDisplay() {
+        const gameStateEl = document.getElementById('debugGameState');
+        const waveActiveEl = document.getElementById('debugWaveActive');
+        const currentWaveEl = document.getElementById('debugCurrentWave');
+        const nextWaveTimerEl = document.getElementById('debugNextWaveTimer');
+        const waveStartCountdownEl = document.getElementById('debugWaveStartCountdown');
+        
+        if (gameStateEl) gameStateEl.textContent = this.state;
+        if (waveActiveEl) waveActiveEl.textContent = this.waveSystem ? 'YES' : 'NO';
+        if (currentWaveEl && this.waveSystem) currentWaveEl.textContent = this.waveSystem.currentWave;
+        if (nextWaveTimerEl && this.waveSystem) nextWaveTimerEl.textContent = Math.ceil(this.waveSystem.nextWaveTimer / 1000);
+        if (waveStartCountdownEl && this.waveSystem) waveStartCountdownEl.textContent = Math.ceil(this.waveSystem.waveStartCountdown / 1000);
     }
 
     addEntity(entity) {
@@ -372,5 +477,29 @@ class Game {
 
     setSelectedClass(className) {
         this.selectedClass = className;
+    }
+    
+    useSpecialAbility() {
+        if (!this.player || !this.specialAbility.isReady) return;
+        
+        const playerTransform = this.player.getComponent('Transform');
+        if (!playerTransform) return;
+        
+        // Create large explosion at player position
+        this.createExplosion(playerTransform.x, playerTransform.y, {
+            radius: 100,
+            damage: 150
+        });
+        
+        // Start cooldown
+        this.specialAbility.isReady = false;
+        this.specialAbility.cooldown = this.specialAbility.maxCooldown;
+        
+        // Play special ability sound
+        try {
+            this.audioEngine.playSound('special_ability');
+        } catch (e) {
+            console.log('Special ability sound not available');
+        }
     }
 }

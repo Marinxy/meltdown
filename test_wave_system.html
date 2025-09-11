@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wave System Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #000; color: #00ff00; }
+        .debug { background: #111; padding: 10px; margin: 10px 0; border: 1px solid #333; }
+        button { padding: 10px; margin: 5px; background: #333; color: #fff; border: none; cursor: pointer; }
+        button:hover { background: #555; }
+    </style>
+</head>
+<body>
+    <h1>Wave System Debug Test</h1>
+    <button onclick="testWaveSystem()">Test Wave System</button>
+    <button onclick="clearLogs()">Clear Logs</button>
+    
+    <div class="debug">
+        <h3>Console Output:</h3>
+        <div id="console-output"></div>
+    </div>
+    
+    <div class="debug">
+        <h3>Wave System Status:</h3>
+        <div id="wave-status">Not initialized</div>
+    </div>
+
+    <script src="js/core/MathUtils.js"></script>
+    <script src="js/core/EventManager.js"></script>
+    <script src="js/core/System.js"></script>
+    <script src="js/systems/WaveSystem.js"></script>
+    
+    <script>
+        let consoleOutput = document.getElementById('console-output');
+        let waveStatus = document.getElementById('wave-status');
+        
+        // Override console.log to capture output
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            consoleOutput.innerHTML += '<div>' + args.join(' ') + '</div>';
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        };
+        
+        function clearLogs() {
+            consoleOutput.innerHTML = '';
+        }
+        
+        function testWaveSystem() {
+            console.log('=== Testing Wave System ===');
+            
+            try {
+                // Create a mock game object
+                const mockGame = {
+                    eventManager: new EventManager(),
+                    entities: [],
+                    addEntity: function(entity) {
+                        this.entities.push(entity);
+                        console.log('Mock game: Added entity', entity.constructor.name);
+                    }
+                };
+                
+                console.log('Creating WaveSystem...');
+                const waveSystem = new WaveSystem(mockGame);
+                
+                console.log('WaveSystem created successfully');
+                console.log('Initial state - Current Wave:', waveSystem.currentWave);
+                console.log('Initial state - Next Wave Timer:', waveSystem.nextWaveTimer);
+                console.log('Initial state - Wave Start Countdown:', waveSystem.waveStartCountdown);
+                
+                console.log('Starting game...');
+                waveSystem.startGame();
+                
+                console.log('After startGame - Current Wave:', waveSystem.currentWave);
+                console.log('After startGame - Next Wave Timer:', waveSystem.nextWaveTimer);
+                console.log('After startGame - Wave Start Countdown:', waveSystem.waveStartCountdown);
+                
+                // Test update method
+                console.log('Testing update method...');
+                for (let i = 0; i < 5; i++) {
+                    waveSystem.update(1000); // 1 second
+                    console.log(`Update ${i+1} - Next Wave Timer: ${waveSystem.nextWaveTimer}, Countdown: ${waveSystem.waveStartCountdown}`);
+                }
+                
+                waveStatus.innerHTML = `
+                    <div>Wave System: WORKING</div>
+                    <div>Current Wave: ${waveSystem.currentWave}</div>
+                    <div>Next Wave Timer: ${waveSystem.nextWaveTimer}</div>
+                    <div>Wave Start Countdown: ${waveSystem.waveStartCountdown}</div>
+                `;
+                
+            } catch (error) {
+                console.log('ERROR:', error.message);
+                console.log('Stack:', error.stack);
+                waveStatus.innerHTML = '<div style="color: red;">ERROR: ' + error.message + '</div>';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -139,6 +139,12 @@ class RenderSystem extends System {
 
         // Apply post-processing effects
         this.applyPostProcessors(ctx);
+        
+        // Apply chaos effects if game instance exists
+        if (window.gameInstance && window.gameInstance.chaosSystem) {
+            const chaosLevel = window.gameInstance.chaosSystem.getChaosLevel();
+            this.applyChaosEffects(ctx, chaosLevel);
+        }
 
         // Render UI elements (not affected by camera)
         this.renderUI(ctx);
@@ -282,6 +288,83 @@ class RenderSystem extends System {
         }
     }
 
+    // Set post-processing effects configuration
+    setPostProcessing(effects) {
+        // Store post-processing effects configuration
+        this.postProcessingEffects = effects || {};
+        
+        // Apply scanlines effect
+        if (effects.scanlines > 0) {
+            this.updatePostProcessor('scanlines', (ctx) => {
+                ctx.save();
+                ctx.globalCompositeOperation = 'multiply';
+                ctx.fillStyle = `rgba(0, 255, 0, ${effects.scanlines * 0.1})`;
+                
+                for (let y = 0; y < this.canvas.height; y += 4) {
+                    ctx.fillRect(0, y, this.canvas.width, 2);
+                }
+                ctx.restore();
+            });
+        }
+        
+        // Apply vignette effect
+        if (effects.vignette > 0) {
+            this.updatePostProcessor('vignette', (ctx) => {
+                const gradient = ctx.createRadialGradient(
+                    this.canvas.width / 2, this.canvas.height / 2, 0,
+                    this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height) / 2
+                );
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                gradient.addColorStop(1, `rgba(0, 0, 0, ${effects.vignette})`);
+                
+                ctx.save();
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                ctx.restore();
+            });
+        }
+        
+        // Apply color shift effect
+        if (effects.colorShift > 0) {
+            this.updatePostProcessor('colorShift', (ctx) => {
+                ctx.save();
+                ctx.globalCompositeOperation = 'screen';
+                ctx.fillStyle = `rgba(255, 0, 0, ${effects.colorShift * 0.1})`;
+                ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                ctx.restore();
+            });
+        }
+        
+        // Apply noise effect
+        if (effects.noise > 0) {
+            this.updatePostProcessor('noise', (ctx) => {
+                const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                const data = imageData.data;
+                const noiseIntensity = effects.noise * 50;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const noise = (Math.random() - 0.5) * noiseIntensity;
+                    data[i] += noise;     // Red
+                    data[i + 1] += noise; // Green
+                    data[i + 2] += noise; // Blue
+                }
+                
+                ctx.putImageData(imageData, 0, 0);
+            });
+        }
+    }
+    
+    // Helper method to update or add post-processors
+    updatePostProcessor(name, processFunction) {
+        const existingProcessor = this.postProcessors.find(p => p.name === name);
+        if (existingProcessor) {
+            existingProcessor.process = processFunction;
+            existingProcessor.active = true;
+        } else {
+            this.addPostProcessor(name, processFunction);
+        }
+    }
+
     // Visual settings
     setBackgroundColor(color) {
         this.backgroundColor = color;
@@ -298,6 +381,16 @@ class RenderSystem extends System {
     }
 
     // Chaos visual effects
+    setChaosEffects(effects) {
+        // Store chaos effects for use during rendering
+        this.chaosEffects = effects || {};
+        
+        // Apply screen shake if specified
+        if (effects.screenShakeMultiplier && effects.screenShakeMultiplier > 1) {
+            this.addScreenShake(effects.screenShakeMultiplier * 5, 100);
+        }
+    }
+
     applyChaosEffects(ctx, chaosLevel) {
         // Color inversion at high chaos
         if (chaosLevel > 0.8) {
@@ -312,6 +405,51 @@ class RenderSystem extends System {
         if (chaosLevel > 0.6) {
             const distortion = (chaosLevel - 0.6) * 10;
             this.addScreenShake(distortion, 100);
+        }
+        
+        // Apply additional chaos effects if set
+        if (this.chaosEffects) {
+            // Apply chromatic aberration
+            if (this.chaosEffects.chromaticAberration > 0) {
+                this.applyChromaticAberration(ctx, this.chaosEffects.chromaticAberration);
+            }
+            
+            // Apply glitch effects
+            if (this.chaosEffects.glitchIntensity > 0) {
+                this.applyGlitchEffect(ctx, this.chaosEffects.glitchIntensity);
+            }
+        }
+    }
+    
+    applyChromaticAberration(ctx, intensity) {
+        if (intensity <= 0) return;
+        
+        const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        const data = imageData.data;
+        const aberration = Math.floor(intensity * 3);
+        
+        // Simple chromatic aberration simulation
+        for (let i = 0; i < data.length; i += 4) {
+            if (i >= aberration * 4) {
+                data[i] = data[i - aberration * 4]; // Red channel offset
+            }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+    }
+    
+    applyGlitchEffect(ctx, intensity) {
+        if (intensity <= 0) return;
+        
+        // Simple glitch effect - random horizontal line displacement
+        const glitchLines = Math.floor(intensity * 10);
+        for (let i = 0; i < glitchLines; i++) {
+            const y = Math.random() * this.canvas.height;
+            const height = Math.random() * 20 + 1;
+            const offset = (Math.random() - 0.5) * intensity * 20;
+            
+            const imageData = ctx.getImageData(0, y, this.canvas.width, height);
+            ctx.putImageData(imageData, offset, y);
         }
     }
 
